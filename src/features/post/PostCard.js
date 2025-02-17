@@ -5,17 +5,18 @@ import {
   Box,
   Card,
   CardHeader,
-  IconButton,
+  // IconButton,
   Link,
   Stack,
   Typography,
 } from "@mui/material";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
+// import MoreVertIcon from "@mui/icons-material/MoreVert";
 // ======
 import { fDate } from "../../utils/formatTime";
 import PostReaction from "./PostReaction";
 import CommentList from "../comment/CommentList";
 import CommentForm from "../comment/CommentForm";
+import MyMoreVertIcon from "./MyMoreVertIcon";
 // ======
 
 function PostCard({ post }) {
@@ -46,9 +47,13 @@ function PostCard({ post }) {
           </Typography>
         }
         action={
-          <IconButton>
-            <MoreVertIcon sx={{ fontSize: 30 }} />
-          </IconButton>
+          // <IconButton>
+          //   <MoreVertIcon
+          //     sx={{ fontSize: 30 }}
+          //     onClick={(e) => handleClick(e)}
+          //   />
+          // </IconButton>;
+          <MyMoreVertIcon sx={{ fontSize: 30 }} post={post} />
         }
       />
 

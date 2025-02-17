@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { useDispatch, useSelector } from "react-redux";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -7,7 +7,7 @@ import { alpha, Box, Card, Stack } from "@mui/material";
 import { Button } from "@mui/material";
 // ======
 import FTextField from "../../components/form/FTextField";
-import { createPost } from "./postSlice";
+import { createPost, updatePost } from "./postSlice";
 import { FUploadImage } from "../../components/form";
 // ======
 
@@ -15,15 +15,18 @@ const yupSchema = Yup.object().shape({
   content: Yup.string().required("Content is required"),
 });
 
-const defaultValues = {
-  content: "",
-  image: "",
-};
+// const defaultValues = {
+//   content: "",
+//   image: "",
+// };
 
-function PostForm() {
+function PostForm({ post, onClose }) {
   const methods = useForm({
     resolver: yupResolver(yupSchema),
-    defaultValues,
+    defaultValues: {
+      content: post?.content || "",
+      image: post?.image || "",
+    },
   });
 
   const {
@@ -37,7 +40,19 @@ function PostForm() {
   const { isLoading } = useSelector((state) => state.post);
 
   const onSubmit = (data) => {
-    dispatch(createPost(data)).then(() => reset());
+    if (post) {
+      // Update post if it's an existing post
+      dispatch(
+        updatePost({
+          postId: post._id,
+          content: data.content,
+          image: data.image,
+        })
+      ).then(() => onClose());
+    } else {
+      // Create a new post
+      dispatch(createPost(data)).then(() => reset());
+    }
   };
 
   const handleDrop = useCallback(
@@ -55,6 +70,14 @@ function PostForm() {
     },
     [setValue]
   );
+
+  useEffect(() => {
+    if (post) {
+      // Set the content and image for editing if post exists
+      setValue("content", post.content);
+      setValue("image", post.image);
+    }
+  }, [post, setValue]);
 
   return (
     <Card sx={{ p: 3 }}>
@@ -97,7 +120,7 @@ function PostForm() {
                 size="small"
                 loading={isSubmitting || isLoading}
               >
-                Post
+                {post ? "Update" : "Post"}
               </Button>
             </Box>
           </Stack>

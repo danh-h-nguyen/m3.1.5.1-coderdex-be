@@ -56,9 +56,36 @@ const slice = createSlice({
       state.postsById = {};
       state.currentPagePosts = [];
     },
+
+    // Bổ sung reducer deletePostSuccess
+    deletePostSuccess(state, action) {
+      state.isLoading = false;
+      state.error = null;
+      const postId = action.payload;
+      delete state.postsById[postId]; // Xóa bài viết khỏi postsById
+      state.currentPagePosts = state.currentPagePosts.filter(
+        (id) => id !== postId
+      ); // Xóa bài viết khỏi currentPagePosts
+    },
+
+    // Bổ sung reducer editPostSuccess
+    editPostSuccess(state, action) {
+      state.isLoading = false;
+      state.error = null;
+      const updatedPost = action.payload;
+      state.postsById[updatedPost._id] = updatedPost; // Cập nhật lại bài viết
+    },
+
+    updatePostSuccess(state, action) {
+      state.isLoading = false;
+      state.error = null;
+      const updatedPost = action.payload;
+      state.postsById[updatedPost._id] = updatedPost; // Cập nhật bài viết trong state
+    },
   },
 });
 
+// Action Creator - tạo bài đăng mới
 export const createPost =
   ({ content, image }) =>
   async (dispatch) => {
@@ -76,7 +103,7 @@ export const createPost =
     }
   };
 
-// thêm từ phần List of Posts
+// Action Creator - lấy danh sách bài đăng
 export const getPosts =
   ({ userId, page, limit = POST_PER_PAGE }) =>
   async (dispatch) => {
@@ -93,6 +120,7 @@ export const getPosts =
     }
   };
 
+// Action Creator - gửi reaction cho bài đăng
 export const sendPostReaction =
   ({ postId, emoji }) =>
   async (dispatch) => {
@@ -109,6 +137,48 @@ export const sendPostReaction =
           reactions: response.data,
         })
       );
+    } catch (error) {
+      dispatch(slice.actions.hasError(error.message));
+    }
+  };
+
+// Action Creator - xóa bài đăng
+export const deletePost = (postId) => async (dispatch) => {
+  dispatch(slice.actions.startLoading());
+  try {
+    await apiService.delete(`/posts/${postId}`);
+    dispatch(slice.actions.deletePostSuccess(postId)); // Cập nhật state sau khi xóa
+  } catch (error) {
+    dispatch(slice.actions.hasError(error.message));
+  }
+};
+
+// Action Creator - chỉnh sửa bài đăng
+export const editPost = (postId, content, image) => async (dispatch) => {
+  dispatch(slice.actions.startLoading());
+  try {
+    let imageUrl = null;
+    if (image) {
+      // Nếu có hình ảnh, upload lên Cloudinary
+      imageUrl = await cloudinaryUpload(image);
+    }
+    const response = await apiService.put(`/posts/${postId}`, {
+      content,
+      image: imageUrl || null, // Nếu không có ảnh, không cần gửi image
+    });
+    dispatch(slice.actions.editPostSuccess(response.data)); // Cập nhật bài đăng trong state
+  } catch (error) {
+    dispatch(slice.actions.hasError(error.message));
+  }
+};
+
+export const updatePost =
+  ({ postId, content }) =>
+  async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await apiService.put(`/posts/${postId}`, { content });
+      dispatch(slice.actions.updatePostSuccess(response.data));
     } catch (error) {
       dispatch(slice.actions.hasError(error.message));
     }
