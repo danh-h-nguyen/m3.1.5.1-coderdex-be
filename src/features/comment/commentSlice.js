@@ -47,6 +47,21 @@ const slice = createSlice({
       const { commentId, reactions } = action.payload;
       state.commentsById[commentId].reactions = reactions;
     },
+    deleteCommentSuccess(state, action) {
+      state.isLoading = false;
+      state.error = null;
+      const { postId, commentId } = action.payload;
+
+      // Xóa comment khỏi state.commentsByPost và state.commentsById
+      const postComments = state.commentsByPost[postId];
+      if (postComments) {
+        state.commentsByPost[postId] = postComments.filter(
+          (id) => id !== commentId
+        );
+      }
+
+      delete state.commentsById[commentId]; // Xóa comment khỏi commentsById
+    },
   },
 });
 
@@ -108,3 +123,14 @@ export const sendCommentReaction =
       dispatch(slice.actions.hasError(error.message));
     }
   };
+
+export const deleteComment = (postId, commentId) => async (dispatch) => {
+  dispatch(slice.actions.startLoading());
+  try {
+    // Gọi API xóa comment
+    await apiService.delete(`/comments/${commentId}`);
+    dispatch(slice.actions.deleteCommentSuccess({ postId, commentId }));
+  } catch (error) {
+    dispatch(slice.actions.hasError(error.message));
+  }
+};
