@@ -3,6 +3,11 @@ import { useDispatch } from "react-redux";
 import {
   Avatar,
   Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   IconButton,
   Menu,
   MenuItem,
@@ -19,6 +24,7 @@ import { deleteComment } from "./commentSlice";
 
 function CommentCard({ comment, postId }) {
   const [anchorEl, setAnchorEl] = useState(null);
+  const [openDialog, setOpenDialog] = useState(false);
   const dispatch = useDispatch();
 
   // Mở menu khi nhấn vào nút
@@ -31,10 +37,21 @@ function CommentCard({ comment, postId }) {
     setAnchorEl(null);
   };
 
+  // Mở modal xác nhận xoá comment
+  const handleOpenDialog = () => {
+    setOpenDialog(true);
+    handleClose(); // Đóng menu sau khi mở modal
+  };
+
+  // Đóng modal xác nhận
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+  };
+
   // Handle Delete Comment
   const handleDelete = (commentId) => {
     dispatch(deleteComment(postId, commentId));
-    handleClose(); // Đóng menu sau khi chọn
+    handleCloseDialog(); // Đóng menu sau khi chọn
   };
 
   return (
@@ -75,12 +92,27 @@ function CommentCard({ comment, postId }) {
             open={Boolean(anchorEl)}
             onClose={handleClose}
           >
-            <MenuItem onClick={handleDelete.bind(null, comment._id)}>
-              Delete
-            </MenuItem>
+            <MenuItem onClick={handleOpenDialog}>Delete</MenuItem>
           </Menu>
         </Box>
       </Paper>
+
+      <Dialog open={openDialog} onClose={handleCloseDialog}>
+        <DialogTitle>Confirm deletion</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2">
+            Are you sure you want to delete this comment?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={() => handleDelete(comment._id)} color="error">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Stack>
   );
 }
