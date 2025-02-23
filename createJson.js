@@ -21,7 +21,7 @@ const createJson = async () => {
         id: index + 1,
         name: pokemon.Name.toLowerCase(),
         types: [pokemon.Type1.toLowerCase(), pokemon.Type2.toLowerCase()],
-        url: `http://localhost:3010/pokemons/images/${imageFileName}`,
+        url: `https://m3-1-5-1-coderdex-be.onrender.com/pokemon_jpg/${imageFileName}`,
       };
     }
     return null;
@@ -33,3 +33,5 @@ const createJson = async () => {
 };
 
 createJson();
+
+// https://m3-1-5-1-coderdex-be.onrender.com
