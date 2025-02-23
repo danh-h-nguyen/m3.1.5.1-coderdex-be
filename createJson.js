@@ -1,22 +1,34 @@
 const fs = require("fs");
 const csvtojson = require("csvtojson");
+const path = require("path");
 
 const createJson = async () => {
   let newData = await csvtojson().fromFile("pokemon.csv");
 
+  // Lấy danh sách tất cả các file trong thư mục images
+  const imageFolderPath = path.join(__dirname, "pokemon_jpg");
+  const imageFiles = fs.readdirSync(imageFolderPath);
+
   newData = Array.from(newData);
 
-  newData = newData.map((pokemon, index) => ({
-    id: index + 1,
-    name: pokemon.Name.toLowerCase(),
-    types: [pokemon.Type1.toLowerCase(), pokemon.Type2.toLowerCase()],
-    // url: `http://localhost:5000/images/${index + 1}.png`,
-  }));
+  newData = newData.map((pokemon, index) => {
+    const imageFileName = `${index + 1}.jpg`;
+    const imageExists = imageFiles.includes(imageFileName);
 
-  console.log(newData.slice(0, 3));
-  // let data = JSON.parse(fs.readFileSync("pokemon.json"));
+    // Nếu hình ảnh tồn tại, thêm trường URL, nếu không để trống
+    if (imageExists) {
+      return {
+        id: index + 1,
+        name: pokemon.Name.toLowerCase(),
+        types: [pokemon.Type1.toLowerCase(), pokemon.Type2.toLowerCase()],
+        url: `http://localhost:3010/pokemons/images/${imageFileName}`,
+      };
+    }
+    return null;
+  });
 
-  // data.data = newData;
+  newData = newData.filter((pokemon) => pokemon !== null);
+
   fs.writeFileSync("pokemon.json", JSON.stringify(newData));
 };
 

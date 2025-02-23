@@ -17,7 +17,7 @@ const readJson = () => {
 const writeJson = (pokemons) => {
   try {
     const jsonData = { data: pokemons };
-    fs.writeFileSync("pokemon.json", JSON.stringify(jsonData, null, 2)); // Ghi vào file pokemon.json
+    fs.writeFileSync("pokemon.json", JSON.stringify(jsonData)); // Ghi vào file pokemon.json
   } catch (error) {
     throw new Error("Error writing JSON file");
   }
