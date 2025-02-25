@@ -29,6 +29,8 @@ const createJson = async () => {
 
   newData = newData.filter((pokemon) => pokemon !== null);
 
+  newData = { data: newData };
+
   fs.writeFileSync("pokemon.json", JSON.stringify(newData));
 };
 

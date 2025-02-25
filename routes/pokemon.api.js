@@ -26,7 +26,7 @@ const writeJson = (pokemons) => {
 // 1. API lấy tất cả Pokémons
 router.get("/", async (req, res, next) => {
   try {
-    const { page, limit, ...filterQuery } = req.query;
+    const { page, limit, search, type, ...filterQuery } = req.query;
     let pokemons = await readJson();
 
     // Phân trang
@@ -34,9 +34,30 @@ router.get("/", async (req, res, next) => {
     const limitNum = parseInt(limit) || 10;
     let offset = limitNum * (pageNum - 1);
 
-    // Lọc dữ liệu theo các tham số
+    // Xử lý tìm kiếm theo tên hoặc id
+    if (search) {
+      if (!isNaN(parseInt(search))) {
+        pokemons = pokemons.data.filter((pokemon) =>
+          String(pokemon.id).includes(search)
+        );
+      } else {
+        pokemons = pokemons.data.filter((pokemon) =>
+          pokemon.name.toLowerCase().includes(search.toLowerCase())
+        );
+      }
+    }
+
+    // Xử lý lọc theo type
+    if (type) {
+      pokemons = pokemons.data.filter(
+        (pokemon) =>
+          pokemon.types[0].toLowerCase().includes(type.toLowerCase()) ||
+          pokemon.types[1].toLowerCase().includes(type.toLowerCase())
+      );
+    }
+
     Object.keys(filterQuery).forEach((key) => {
-      pokemons = pokemons.filter(
+      pokemons = pokemons.data.filter(
         (pokemon) =>
           String(pokemon[key]).toLowerCase() ===
           String(filterQuery[key]).toLowerCase()
@@ -44,7 +65,7 @@ router.get("/", async (req, res, next) => {
     });
 
     // Phân trang
-    const result = pokemons.slice(offset, offset + limitNum);
+    const result = pokemons.data.slice(offset, offset + limitNum);
     res.status(200).send({ data: result });
   } catch (error) {
     next(error);
@@ -52,73 +73,68 @@ router.get("/", async (req, res, next) => {
 });
 
 // 2. API lấy thông tin của 1 Pokémon
-// router.get("/:pokemonId", async (req, res, next) => {
-//   try {
-//     const { pokemonId } = req.params;
-//     const pokemons = await readCsv();
-//     const pokemon = pokemons.find(
-//       (p) => p.Name.toLowerCase() === pokemonId.toLowerCase()
-//     );
-//     if (!pokemon) {
-//       const exception = new Error(`Pokemon with name ${pokemonId} not found`);
-//       exception.statusCode = 404;
-//       throw exception;
-//     }
-//     res.status(200).send({
-//       data: [
-//         {
-//           id: pokemons.indexOf(pokemon) + 1,
-//           name: pokemon.Name.toLowerCase(),
-//           types: [pokemon.Type1.toLowerCase(), pokemon.Type2.toLowerCase()],
-//           url: `http://localhost:5000/images/${
-//             pokemons.indexOf(pokemon) + 1
-//           }.png`,
-//         },
-//       ],
-//     });
-//   } catch (error) {
-//     next(error);
-//   }
-// });
+router.get("/:pokemonId", async (req, res, next) => {
+  try {
+    const { pokemonId } = req.params;
+    const pokemons = await readJson();
+
+    const currentPokemonId = parseInt(pokemonId);
+    const totalPokemons = pokemons.data.length;
+    const pokemon = pokemons.data.find((p) => p.id === currentPokemonId);
+    const nextPokemon = pokemons.data.find(
+      (p) =>
+        p.id ===
+        (currentPokemonId + 1 > totalPokemons ? 1 : currentPokemonId + 1)
+    );
+    const previousPokemon = pokemons.data.find(
+      (p) =>
+        p.id ===
+        (currentPokemonId - 1 < 1 ? totalPokemons : currentPokemonId - 1)
+    );
+
+    if (!pokemon) {
+      const exception = new Error(`Pokemon with ID ${pokemonId} not found`);
+      exception.statusCode = 404;
+      throw exception;
+    }
+
+    res.status(200).send({ data: { pokemon, nextPokemon, previousPokemon } });
+  } catch (error) {
+    console.log(error);
+    next(error);
+  }
+});
 
 // 3. API tạo mới một Pokémon
-// router.post("/", async (req, res, next) => {
-//   try {
-//     const { name, type1, type2, evolution } = req.body;
-//     if (!name || !type1 || !type2 || !evolution) {
-//       const exception = new Error("Missing required fields");
-//       exception.statusCode = 400;
-//       throw exception;
-//     }
+router.post("/", async (req, res, next) => {
+  try {
+    const { name, id, imgUrl, types } = req.body;
 
-//     const newPokemon = {
-//       Name: name,
-//       Type1: type1,
-//       Type2: type2,
-//       Evolution: evolution,
-//     };
+    // Kiểm tra nếu mảng types có ít nhất 2 phần tử
+    if (!types || types.length < 2) {
+      const exception = new Error("Missing types information");
+      exception.statusCode = 400;
+      throw exception;
+    }
 
-//     const pokemons = await readCsv();
-//     pokemons.push(newPokemon);
-//     writeJson(pokemons); // Ghi lại dữ liệu vào file JSON
+    const newPokemon = {
+      id: parseInt(id),
+      name: name,
+      types: [types[0].toLowerCase(), types[1].toLowerCase()],
+      url: imgUrl,
+    };
 
-//     res.status(201).send({
-//       data: [
-//         {
-//           id: pokemons.length,
-//           name: newPokemon.Name.toLowerCase(),
-//           types: [
-//             newPokemon.Type1.toLowerCase(),
-//             newPokemon.Type2.toLowerCase(),
-//           ],
-//           url: `http://localhost:5000/images/${pokemons.length}.png`,
-//         },
-//       ],
-//     });
-//   } catch (error) {
-//     next(error);
-//   }
-// });
+    const pokemons = await readJson();
+    pokemons.data.push(newPokemon);
+    writeJson(pokemons.data); // Ghi lại dữ liệu vào file JSON
+
+    res.status(201).send({
+      data: newPokemon,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 
 // 4. API cập nhật thông tin của một Pokémon
 // router.put("/:pokemonId", async (req, res, next) => {
