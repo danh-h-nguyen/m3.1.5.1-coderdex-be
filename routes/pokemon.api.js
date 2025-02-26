@@ -113,7 +113,7 @@ router.get("/:pokemonId", async (req, res, next) => {
 router.post("/", async (req, res, next) => {
   try {
     const { name, id, imgUrl, types } = req.body;
-
+    console.log(req.body);
     if (!types || types.length < 2) {
       const exception = new Error("Missing types information");
       exception.statusCode = 400;
@@ -126,6 +126,7 @@ router.post("/", async (req, res, next) => {
       types: [types[0].toLowerCase(), types[1].toLowerCase()],
       url: imgUrl,
     };
+    console.log(newPokemon);
 
     const pokemons = await readJson();
     pokemons.data.push(newPokemon);
