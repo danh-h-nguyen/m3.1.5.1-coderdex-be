@@ -36,24 +36,28 @@ router.get("/", async (req, res, next) => {
 
     // Xử lý tìm kiếm theo tên hoặc id
     if (search) {
+      pokemons = pokemons.data;
       if (!isNaN(parseInt(search))) {
-        pokemons = pokemons.data.filter((pokemon) =>
+        pokemons = pokemons.filter((pokemon) =>
           String(pokemon.id).includes(search)
         );
       } else {
-        pokemons = pokemons.data.filter((pokemon) =>
+        pokemons = pokemons.filter((pokemon) =>
           pokemon.name.toLowerCase().includes(search.toLowerCase())
         );
       }
+      pokemons = { data: pokemons };
     }
 
     // Xử lý lọc theo type
     if (type) {
-      pokemons = pokemons.data.filter(
+      pokemons = pokemons.data;
+      pokemons = pokemons.filter(
         (pokemon) =>
           pokemon.types[0].toLowerCase().includes(type.toLowerCase()) ||
           pokemon.types[1].toLowerCase().includes(type.toLowerCase())
       );
+      pokemons = { data: pokemons };
     }
 
     Object.keys(filterQuery).forEach((key) => {
@@ -110,7 +114,6 @@ router.post("/", async (req, res, next) => {
   try {
     const { name, id, imgUrl, types } = req.body;
 
-    // Kiểm tra nếu mảng types có ít nhất 2 phần tử
     if (!types || types.length < 2) {
       const exception = new Error("Missing types information");
       exception.statusCode = 400;
@@ -126,11 +129,9 @@ router.post("/", async (req, res, next) => {
 
     const pokemons = await readJson();
     pokemons.data.push(newPokemon);
-    writeJson(pokemons.data); // Ghi lại dữ liệu vào file JSON
+    writeJson(pokemons.data);
 
-    res.status(201).send({
-      data: newPokemon,
-    });
+    res.status(201).send({ data: newPokemon });
   } catch (error) {
     next(error);
   }
