@@ -110,28 +110,86 @@ router.get("/:pokemonId", async (req, res, next) => {
 });
 
 // 3. API tạo mới một Pokémon
+const pokemonTypes = [
+  "bug",
+  "dragon",
+  "fairy",
+  "fire",
+  "ghost",
+  "ground",
+  "normal",
+  "psychic",
+  "steel",
+  "dark",
+  "electric",
+  "fighting",
+  "flyingText",
+  "grass",
+  "ice",
+  "poison",
+  "rock",
+  "water",
+];
+
 router.post("/", async (req, res, next) => {
   try {
     const { name, id, imgUrl, types } = req.body;
     console.log(req.body);
-    if (!types || types.length < 2) {
-      const exception = new Error("Missing types information");
+
+    // Kiểm tra dữ liệu bắt buộc
+    if (!name || !id || !types) {
+      const exception = new Error("Missing required data.");
       exception.statusCode = 400;
       throw exception;
     }
 
+    // Kiểm tra nếu có ít nhất một loại hợp lệ (không phải chuỗi rỗng, không phải null hoặc undefined)
+    const validTypes = types.filter(
+      (type) => type !== null && type.trim() !== "" // Loại bỏ null, undefined, chuỗi rỗng
+    );
+
+    // Nếu không có loại hợp lệ hoặc có quá 2 loại, trả về lỗi
+    if (validTypes.length < 1 || validTypes.length > 2) {
+      const exception = new Error("Pokémon's type is invalid.");
+      exception.statusCode = 400;
+      throw exception;
+    }
+
+    // Kiểm tra loại hợp lệ (chuyển tất cả về chữ thường và so sánh với pokemonTypes)
+    if (
+      !validTypes.every((type) => pokemonTypes.includes(type.toLowerCase()))
+    ) {
+      const exception = new Error("Pokémon's type is invalid.");
+      exception.statusCode = 400;
+      throw exception;
+    }
+
+    // Kiểm tra xem Pokémon đã tồn tại chưa
+    const pokemons = await readJson();
+    const pokemonExists = pokemons.data.some(
+      (pokemon) =>
+        pokemon.id === id || pokemon.name.toLowerCase() === name.toLowerCase()
+    );
+    if (pokemonExists) {
+      const exception = new Error("The Pokémon already exists.");
+      exception.statusCode = 400;
+      throw exception;
+    }
+
+    // Tạo Pokémon mới (chuyển tất cả types về chữ thường và lọc bỏ phần tử null/undefined)
     const newPokemon = {
       id: parseInt(id),
       name: name,
-      types: [types[0].toLowerCase(), types[1].toLowerCase()],
+      types: validTypes.map((type) => type.toLowerCase()), // Chuyển các loại thành chữ thường
       url: imgUrl,
     };
     console.log(newPokemon);
 
-    const pokemons = await readJson();
+    // Lưu Pokémon mới vào file
     pokemons.data.push(newPokemon);
     writeJson(pokemons.data);
 
+    // Gửi phản hồi thành công
     res.status(201).send({ data: newPokemon });
   } catch (error) {
     next(error);
